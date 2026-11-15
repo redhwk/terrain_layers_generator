@@ -13,6 +13,9 @@ A companion addon for [Terrain3D](https://github.com/TokisanGames/Terrain3D):
 ## Install
 
 1. Copy the `terrain_layers_generator` folder into your project’s `addons/` directory.
+   - The folder name must be exactly `terrain_layers_generator`. GitHub’s automatic Source code ZIP
+     often extracts as `terrain_layers_generator-0.1.0` (or similar) — rename it. Prefer a Release
+     asset ZIP that already uses the correct folder name when one is attached.
 2. Project → Project Settings → Plugins → enable **TerrainLayers and TerrainGenerator for Terrain3D**.
 3. Ensure **Terrain3D** is also enabled.
 
@@ -29,7 +32,8 @@ A companion addon for [Terrain3D](https://github.com/TokisanGames/Terrain3D):
 
 1. Add a **TerrainGenerator** child under Terrain3D (Data Directory set on Terrain3D).
 2. Set Area / noise, add shape children as needed, press **Generate**.
-3. Use the Inspector **Doc** control for examples.
+3. **Listed Regions:** fill via **Add Regions From Area** (frame with Area first) or **Add Selected Node's Region** — entries are region grid cells, not world meters.
+4. Use the Inspector **Doc** control for examples.
 
 ## Documentation
 

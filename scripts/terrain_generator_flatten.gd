@@ -128,7 +128,11 @@ func outline_color() -> Color:
 	return Color(0.75, 0.55, 0.95)
 
 
-func add_outline(mesh: ImmediateMesh, y: float) -> void:
+func can_draw_outline() -> bool:
+	return true
+
+
+func add_outline(mesh: ImmediateMesh, y: float) -> bool:
 	var rx := radius * absf(scale.x)
 	var rz := radius * absf(scale.z)
 	var c := Vector2(global_position.x, global_position.z)
@@ -159,6 +163,7 @@ func add_outline(mesh: ImmediateMesh, y: float) -> void:
 		var a1 := TAU * float(i + 1) / SEGMENTS
 		mesh.surface_add_vertex(_flatten_outline_point(c, rx, rz, cos_y, sin_y, y, a0, flat, wobble))
 		mesh.surface_add_vertex(_flatten_outline_point(c, rx, rz, cos_y, sin_y, y, a1, flat, wobble))
+	return true
 
 
 func _flatten_outline_point(c: Vector2, rx: float, rz: float, cos_y: float, sin_y: float, y: float, angle: float, ring: float, wobble: FastNoiseLite) -> Vector3:

@@ -106,7 +106,11 @@ func outline_color() -> Color:
 	return Color(0.35, 0.75, 1.0)
 
 
-func add_outline(mesh: ImmediateMesh, y: float) -> void:
+func can_draw_outline() -> bool:
+	return true
+
+
+func add_outline(mesh: ImmediateMesh, y: float) -> bool:
 	var hl := length * absf(scale.x) * (1.0 + natural_warp)
 	var hw := width * absf(scale.z) * (1.0 + natural_warp)
 	var c := Vector2(global_position.x, global_position.z)
@@ -127,6 +131,7 @@ func add_outline(mesh: ImmediateMesh, y: float) -> void:
 	var axis := Vector2(cos_y, sin_y) * hl
 	mesh.surface_add_vertex(Vector3(c.x - axis.x, y, c.y - axis.y))
 	mesh.surface_add_vertex(Vector3(c.x + axis.x, y, c.y + axis.y))
+	return true
 
 
 func _ellipse_point(c: Vector2, hl: float, hw: float, cos_y: float, sin_y: float, y: float, angle: float) -> Vector3:

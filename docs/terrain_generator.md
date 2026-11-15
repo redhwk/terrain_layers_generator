@@ -35,10 +35,20 @@ Edge Falloff = 0 gives hard edges (cliffs) on purpose; 100 - 300 m blends.
 ## Scope (where it generates)
 - Area (default): a rectangle of Area Size meters centred on the node. Only ground inside it
   changes; regions it overlaps are added where missing (Terrain3D regions are 256 m by default,
-  so a 256 m Area that isn't lined up with the region grid touches up to 4 regions).
+  so a 256 m Area that isn't lined up with the region grid touches up to 4 regions). Use Area when
+  you want one clear rectangle — it is the simplest choice for most work.
 - All Regions: every region the terrain already has.
-- Listed Regions: only the regions in Regions. Select any node standing in a region (a Marker3D, the
-  Player ...), select TerrainGenerator, press Add Selected Node's Region. Missing regions are added.
+- Listed Regions: only the cells in the **Regions** list. Those entries are Terrain3D **region grid
+  indices** `(rx, rz)`, not world meters. One step = one region (often 256 m). Orange outline =
+  which cells Generate will touch. Prefer the buttons over typing numbers:
+  1. **Add Regions From Area** (easiest): place/size the yellow Area over the patch you want, press
+     the button — it copies every overlapped cell into Regions and switches Scope to Listed. Trim
+     the list if you need a non-rectangular set.
+  2. **Add Selected Node's Region**: select a Node3D standing in a region (Marker3D, Player, …),
+     select the TerrainGenerator, press the button — appends that one cell and switches to Listed.
+  Example (256 m regions): world near X=-512, Z=1024 maps to cell `(-2, 4)`. Missing regions are
+  added on Generate. Use Listed when you need a sparse or non-rectangular set of cells, or to lock
+  a set after framing it with Area.
 
 ## Your sculpting is kept
 - The generator remembers what it has made. Everything else (your hand sculpting, and terrain that
@@ -97,7 +107,10 @@ shape's footprint when the generator or a shape is selected.
 | Flatten | Purple  | Levels a pad toward Height (soft edge)            |
 | Erosion | Green   | Final polish: softens slopes; optional light flow |
 
-- Generate on a shape = apply only that shape onto the terrain you already see.
+- Generate on a shape = apply only that shape onto the terrain you already see (uses the
+  TerrainGenerator's **Scope**). The shape must sit over the regions in that Scope — otherwise
+  nothing changes. **Recommended:** Scope = Area, keep the shape inside the yellow rectangle, then
+  Generate on the shape. Listed Regions works too if the shape footprint overlaps those cells.
 - Generate on the TerrainGenerator = rebuild base noise + every **Enabled** shape
   (**Erosion is skipped** — run it last on the Erosion node).
 - Typical order: noise + shapes (Mountain … Flatten) until the land looks right, then **Erosion**
@@ -106,7 +119,8 @@ shape's footprint when the generator or a shape is selected.
   only on the shape you are testing (or on several you want stacked). The TerrainGenerator itself
   has no Enabled switch — use each shape's Enabled. (Noise Enabled on the generator only turns the
   base noise on/off.)
-- The yellow Area must cover the shape. If a shape sits outside it, the node shows a warning.
+- With Scope = Area, the yellow Area must cover the shape (warning if it sits outside). With Listed,
+  place the shape over the listed cells (or switch back to Area to place it).
 - **Falloff Curve** (on a shape) is optional and usually left empty. It is not the same as
   **Edge Falloff** (on the TerrainGenerator), which blends the whole Area into neighbouring ground.
 - Transform Scale X/Z stretches the footprint; Scale Y multiplies Height / Depth.

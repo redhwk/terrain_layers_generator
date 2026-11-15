@@ -103,7 +103,11 @@ func outline_color() -> Color:
 	return Color(1.0, 0.45, 0.2)
 
 
-func add_outline(mesh: ImmediateMesh, y: float) -> void:
+func can_draw_outline() -> bool:
+	return true
+
+
+func add_outline(mesh: ImmediateMesh, y: float) -> bool:
 	var r := radius * maxf(absf(scale.x), absf(scale.z)) * (1.0 + natural_warp)
 	var c := Vector2(global_position.x, global_position.z)
 	var color := outline_color()
@@ -119,6 +123,7 @@ func add_outline(mesh: ImmediateMesh, y: float) -> void:
 	mesh.surface_add_vertex(Vector3(c.x + 8.0, y, c.y))
 	mesh.surface_add_vertex(Vector3(c.x, y, c.y - 8.0))
 	mesh.surface_add_vertex(Vector3(c.x, y, c.y + 8.0))
+	return true
 
 
 func _notification(what: int) -> void:

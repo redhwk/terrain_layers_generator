@@ -57,9 +57,15 @@ func outline_color() -> Color:
 	return Color(0.4, 0.85, 1.0)
 
 
+## Whether add_outline() will write vertices for the current Scope / settings.
+func can_draw_outline() -> bool:
+	return false
+
+
 ## Draws this shape's footprint into an ImmediateMesh (editor outline). Override in each shape.
-func add_outline(mesh: ImmediateMesh, y: float) -> void:
-	pass
+## Returns true if any vertices were added (ImmediateMesh cannot surface_end an empty surface).
+func add_outline(mesh: ImmediateMesh, y: float) -> bool:
+	return false
 
 
 ## Included in the generator's outline cache key so Inspector edits refresh the oval / circle.

@@ -209,11 +209,16 @@ func outline_color() -> Color:
 	return Color(0.35, 0.85, 0.55)
 
 
-## Draws the generator Area (erosion always covers the whole Scope / Area).
-func add_outline(mesh: ImmediateMesh, y: float) -> void:
+func can_draw_outline() -> bool:
 	var gen := get_generator()
-	if gen == null or gen.scope != TerrainGenerator.Scope.AREA:
-		return
+	return gen != null and gen.scope == TerrainGenerator.Scope.AREA
+
+
+## Draws the generator Area (erosion always covers the whole Scope / Area).
+func add_outline(mesh: ImmediateMesh, y: float) -> bool:
+	if not can_draw_outline():
+		return false
+	var gen := get_generator()
 	var r := gen.get_area_rect()
 	var color := outline_color()
 	var c := [
@@ -226,6 +231,7 @@ func add_outline(mesh: ImmediateMesh, y: float) -> void:
 	for i in 4:
 		mesh.surface_add_vertex(c[i])
 		mesh.surface_add_vertex(c[(i + 1) % 4])
+	return true
 
 
 func get_footprint_rect() -> Rect2:

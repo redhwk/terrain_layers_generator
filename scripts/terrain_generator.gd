@@ -10,9 +10,30 @@ class_name TerrainGenerator
 extends Node3D
 
 
-enum Scope { AREA, ALL_REGIONS, LISTED_REGIONS }
-enum Combine { REPLACE, ADD }
-enum NoiseStyle { ROLLING_HILLS, RIDGED_MOUNTAINS, BILLOWY }
+enum Scope {
+	## Meters rectangle centred on this node (Area Size). Regions under it are added if missing.
+	## Best for placing shapes: keep the shape footprint inside the yellow Area.
+	AREA,
+	## Every region the terrain already has. Can be slow on large worlds.
+	ALL_REGIONS,
+	## Only the grid cells in Regions (rx, rz — not world meters). Fill with Add Regions From Area
+	## or Add Selected Node's Region. Shapes still need to sit over those cells to change them.
+	LISTED_REGIONS,
+}
+enum Combine {
+	## New heights replace what earlier Generates made here.
+	REPLACE,
+	## New heights are added on top of what earlier Generates made here.
+	ADD,
+}
+enum NoiseStyle {
+	## Smooth hills.
+	ROLLING_HILLS,
+	## Sharp crests and ridge lines.
+	RIDGED_MOUNTAINS,
+	## Round bumps with creases between them.
+	BILLOWY,
+}
 
 const CURVE_SAMPLES := 256
 const MANY_REGIONS := 64
@@ -23,8 +44,9 @@ const MANY_REGIONS := 64
 		terrain = value
 		update_configuration_warnings()
 
-## Area: a rectangle centred on this node (regions are added where missing). All Regions: every
-## existing region. Listed Regions: the regions in Regions (added where missing).
+## Where Generate runs. Area: a meters rectangle centred on this node (regions added where
+## missing). All Regions: every region the terrain already has. Listed Regions: only the grid
+## cells in Regions — those are Terrain3D region indices (rx, rz), not world X/Z meters.
 @export var scope: Scope = Scope.AREA:
 	set(value):
 		scope = value
@@ -34,7 +56,8 @@ const MANY_REGIONS := 64
 ## changes (Edge Falloff blends from its edge inwards).
 @export var area_size := Vector2(1024, 1024)
 
-## Region locations to generate (Scope = Listed Regions). "Add Selected Node's Region" fills this.
+## Terrain3D region grid cells (rx, rz) for Scope = Listed Regions. One step = one region (often
+## 256 m). Prefer Add Regions From Area or Add Selected Node's Region instead of typing these.
 @export var regions: Array[Vector2i] = []
 
 ## Changes the whole pattern. The same seed and settings always give the same terrain.
@@ -93,7 +116,11 @@ const MANY_REGIONS := 64
 ## your hand sculpting and the terrain that was there before.
 @export_tool_button("Remove Generated Heights", "Remove") var remove_button := remove_generated
 @export_tool_button("Randomize Seed", "RandomNumberGenerator") var randomize_button := randomize_seed
-## Adds the region under the node selected in the Scene dock to Regions (and switches to Listed).
+## Copies every region the yellow Area overlaps into Regions and switches Scope to Listed
+## Regions. Frame the patch with Area Size first, then press this (easiest way to fill Listed).
+@export_tool_button("Add Regions From Area", "ActionCopy") var add_from_area_button := add_regions_from_area
+## Adds the region under a Node3D selected in the Scene dock to Regions (and switches to Listed).
+## Select the marker/player in the region, then select this TerrainGenerator, then press this.
 @export_tool_button("Add Selected Node's Region", "Add") var add_region_button := add_selected_region
 
 
@@ -321,6 +348,23 @@ func randomize_seed() -> void:
 	notify_property_list_changed()
 
 
+func add_regions_from_area() -> void:
+	var t = get_terrain()
+	if t == null:
+		push_warning("TerrainGenerator: put this node under a Terrain3D (or assign Terrain).")
+		return
+	var added := 0
+	for loc in get_area_region_locations():
+		if not loc in regions:
+			regions.append(loc)
+			added += 1
+	scope = Scope.LISTED_REGIONS
+	notify_property_list_changed()
+	print("TerrainGenerator: Add Regions From Area — added %d cell(s), Regions now has %d." % [
+		added, regions.size()
+	])
+
+
 func add_selected_region() -> void:
 	var t = get_terrain()
 	var editor = Engine.get_singleton(&"EditorInterface") if Engine.has_singleton(&"EditorInterface") else null
@@ -342,6 +386,39 @@ func get_area_rect() -> Rect2:
 	return Rect2(Vector2(global_position.x, global_position.z) - half, half * 2.0)
 
 
+## Region grid cells overlapped by the current Area rectangle (same math as Scope = Area).
+func get_area_region_locations() -> Array[Vector2i]:
+	var t = get_terrain()
+	var out: Array[Vector2i] = []
+	if t == null:
+		return out
+	var rs := Terrain3DBridge.region_size(t) * Terrain3DBridge.vertex_spacing(t)
+	if rs <= 0.0:
+		return out
+	var r := get_area_rect()
+	var lo := Vector2i(floori(r.position.x / rs), floori(r.position.y / rs))
+	var hi := Vector2i(ceili(r.end.x / rs) - 1, ceili(r.end.y / rs) - 1)
+	for y in range(lo.y, hi.y + 1):
+		for x in range(lo.x, hi.x + 1):
+			var loc := Vector2i(x, y)
+			if Terrain3DBridge.is_valid_location(loc):
+				out.append(loc)
+	return out
+
+
+## True if the shape's footprint overlaps any of the given region cells in world XZ.
+func _shape_overlaps_locations(t, shape: TerrainGeneratorShape, locations: Array[Vector2i]) -> bool:
+	var foot := shape.get_footprint_rect()
+	if foot.size == Vector2.ZERO:
+		return true # Unknown footprint — let Generate run.
+	var rs := Terrain3DBridge.region_size(t) * Terrain3DBridge.vertex_spacing(t)
+	for loc in locations:
+		var cell := Rect2(Terrain3DBridge.region_origin(t, loc), Vector2(rs, rs))
+		if foot.intersects(cell):
+			return true
+	return false
+
+
 ## The region locations Generate would touch (existing or not).
 func get_target_locations() -> Array[Vector2i]:
 	var t = get_terrain()
@@ -356,14 +433,7 @@ func get_target_locations() -> Array[Vector2i]:
 				if Terrain3DBridge.is_valid_location(loc) and not loc in out:
 					out.append(loc)
 		Scope.AREA:
-			var rs := Terrain3DBridge.region_size(t) * Terrain3DBridge.vertex_spacing(t)
-			var r := get_area_rect()
-			var lo := Vector2i(floori(r.position.x / rs), floori(r.position.y / rs))
-			var hi := Vector2i(ceili(r.end.x / rs) - 1, ceili(r.end.y / rs) - 1)
-			for y in range(lo.y, hi.y + 1):
-				for x in range(lo.x, hi.x + 1):
-					if Terrain3DBridge.is_valid_location(Vector2i(x, y)):
-						out.append(Vector2i(x, y))
+			out = get_area_region_locations()
 	return out
 
 
@@ -388,6 +458,12 @@ func _run(remove: bool, only_shape: TerrainGeneratorShape = null) -> void:
 				new_locations.append(loc)
 	if locations.is_empty():
 		push_warning("TerrainGenerator: no regions in the scope.")
+		return
+	if only_shape and not _shape_overlaps_locations(t, only_shape, locations):
+		push_warning(
+			"TerrainGenerator: %s's footprint does not overlap the current Scope regions — nothing will change. Move the shape's Transform position (X and Z) so that it is over those regions, or switch Scope to Area and cover the shape with the yellow rectangle."
+			% only_shape.name
+		)
 		return
 	if locations.size() > MANY_REGIONS:
 		push_warning("TerrainGenerator: %d regions, this can take a while." % locations.size())
@@ -752,11 +828,14 @@ func _update_outline() -> void:
 	if not shown:
 		return
 	_outline.global_transform = Transform3D.IDENTITY
-	var mesh := ImmediateMesh.new()
 	var locations := get_target_locations()
 	var y := global_position.y
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+	var mesh := ImmediateMesh.new()
+	var open := false
+	var drew := false
 	if not locations.is_empty():
+		mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+		open = true
 		var rs := Terrain3DBridge.region_size(t) * Terrain3DBridge.vertex_spacing(t)
 		for loc in locations:
 			_add_rect_lines(mesh, Rect2(Terrain3DBridge.region_origin(t, loc), Vector2(rs, rs)), Color(1.0, 0.55, 0.1))
@@ -765,11 +844,21 @@ func _update_outline() -> void:
 			_add_rect_lines(mesh, r, Color(1.0, 0.95, 0.2))
 			if edge_falloff > 0.0 and r.size.x > edge_falloff * 2.0 and r.size.y > edge_falloff * 2.0:
 				_add_rect_lines(mesh, r.grow(-edge_falloff), Color(1.0, 1.0, 0.75))
+		drew = true
 	for shape in get_shapes():
-		if shape.enabled:
-			shape.add_outline(mesh, y)
-	mesh.surface_end()
-	_outline.mesh = mesh
+		if not shape.enabled or not shape.can_draw_outline():
+			continue
+		if not open:
+			mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+			open = true
+		if shape.add_outline(mesh, y):
+			drew = true
+	if open and drew:
+		mesh.surface_end()
+		_outline.mesh = mesh
+	else:
+		# Empty Listed/All, or shapes that skip drawing — never surface_end with 0 vertices.
+		_outline.mesh = null
 
 
 func _add_rect_lines(mesh: ImmediateMesh, r: Rect2, color: Color) -> void:
