@@ -4,6 +4,7 @@ A companion addon for [Terrain3D](https://github.com/TokisanGames/Terrain3D):
 
 - **TerrainLayerMasks** — place every Terrain3D texture with height / slope / noise / texture masks (not limited to Terrain3D’s two-texture auto shader).
 - **TerrainGenerator** — procedural base noise plus shapes (Mountain, Valley, Mesa, Island, Lake, Flatten, Erosion).
+- **TerrainFloorGuard** — keeps rigid bodies from falling through Terrain3D regions that have no collider; optional Freeze / Despawn of distant items for large worlds and multiplayer.
 
 ## Requirements
 
@@ -34,6 +35,13 @@ A companion addon for [Terrain3D](https://github.com/TokisanGames/Terrain3D):
 2. Set Area / noise, add shape children as needed, press **Generate**.
 3. **Listed Regions:** fill via **Add Regions From Area** (frame with Area first) or **Add Selected Node's Region** — entries are region grid cells, not world meters.
 4. Use the Inspector **Doc** control for examples.
+
+### Floor guard (dropped items / parked props)
+
+1. Add a **TerrainFloorGuard** node anywhere in the level (scene root is fine).
+2. Leave **Body** empty — it covers every `RigidBody3D` and re-scans for newly spawned loot.
+3. Optional: set **Park Distance** (e.g. 200) and **Park Mode** = Freeze (keep the node) or Despawn (free it and recreate when a player returns).
+4. Use the Inspector **Doc** control for the full guide (also covers [TerrainGround](docs/terrain_ground.md) for direct height lookups).
 
 ## Documentation
 

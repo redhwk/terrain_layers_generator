@@ -45,7 +45,7 @@ Edge Falloff = 0 gives hard edges (cliffs) on purpose; 100 - 300 m blends.
      the button — it copies every overlapped cell into Regions and switches Scope to Listed. Trim
      the list if you need a non-rectangular set.
   2. **Add Selected Node's Region**: select a Node3D standing in a region (Marker3D, Player, …),
-     select the TerrainGenerator, press the button — appends that one cell and switches to Listed.
+	 select the TerrainGenerator, press the button — appends that one cell and switches to Listed.
   Example (256 m regions): world near X=-512, Z=1024 maps to cell `(-2, 4)`. Missing regions are
   added on Generate. Use Listed when you need a sparse or non-rectangular set of cells, or to lock
   a set after framing it with Area.

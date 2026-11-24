@@ -26,12 +26,17 @@ func _parse_begin(object: Object) -> void:
 
 
 func _doc_file(object: Object) -> String:
-	if object.has_method(&"documentation_file"):
-		return str(object.call(&"documentation_file"))
+	# Type checks first: non-@tool scripts are placeholders in the editor, and call() on them errors.
+	if object is TerrainFloorGuard:
+		return "terrain_floor_guard.md"
 	if object is TerrainGenerator:
 		return "terrain_generator.md"
 	if object is TerrainLayerMasks:
 		return "terrain_layers.md"
 	if object is TerrainLayerBaker:
 		return "terrain_layer_baking_tests.md"
+	# @tool scripts can answer for themselves (shapes, etc.).
+	var script := object.get_script() as Script
+	if script != null and script.is_tool() and object.has_method(&"documentation_file"):
+		return str(object.call(&"documentation_file"))
 	return ""

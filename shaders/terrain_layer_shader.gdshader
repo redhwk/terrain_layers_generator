@@ -3,7 +3,7 @@
  * Additions to Terrain3D's code: None, Flat and Noise World Backgrounds in one shader, and the
  * TERRAIN LAYERS HOOK lines for Terrain Layer Masks (res://addons/terrain_layers_generator/shaders/terrain_layer_masks.gdshaderinc).
  */
-// TERRAIN LAYER SHADER FEATURES: hooks=4 texture_filtering=0 auto_shader_enabled=true dual_scaling_enabled=true macro_variation_enabled=true projection_enabled=true max_regions=1024 output_albedo=true output_roughness=true output_specular=true output_normal_map=true output_ambient_occlusion=true
+// TERRAIN LAYER SHADER FEATURES: hooks=4 texture_filtering=0 auto_shader_enabled=true dual_scaling_enabled=true macro_variation_enabled=true projection_enabled=true max_regions=256 output_albedo=true output_roughness=true output_specular=true output_normal_map=true output_ambient_occlusion=true
 
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx, skip_vertex_transform;
@@ -57,8 +57,8 @@ uniform float _region_size = 1024.0;
 uniform float _region_texel_size = 0.0009765625; // = 1./region_size
 uniform int _region_map_size = 32;
 uniform int _region_map[1024];
-uniform vec2 _region_locations[1024];
-#define MAX_REGIONS 1024
+uniform vec2 _region_locations[256];
+#define MAX_REGIONS 256
 
 uniform float _texture_normal_depth_array[32];
 uniform float _texture_ao_strength_array[32];
